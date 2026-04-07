@@ -168,13 +168,13 @@ class Browser(QWebEngineView):
     def _on_url_requested(self, url: str) -> None:
         """Slot called by the IPC listener signal to navigate to *url*."""
         self.navigate(url)
-        self._restore_window()
+        self.restore_window()
 
     def _on_show_requested(self) -> None:
         """Bring the window to the foreground."""
-        self._restore_window()
+        self.restore_window()
 
-    def _restore_window(self) -> None:
+    def restore_window(self) -> None:
         """Show the window, preserving maximized state."""
         if self.isVisible():
             self.raise_()
