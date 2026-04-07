@@ -16,6 +16,8 @@ DESKTOP_FILE_NAME = "flufy.desktop"
 # --- Platform directories (XDG-compliant) ---
 # Don't create dirs at import time; callers mkdir() when actually writing.
 _dirs = PlatformDirs(APP_NAME)
+_XDG_DATA_HOME = Path(_dirs.user_data_dir).parent  # e.g. ~/.local/share
+DESKTOP_FILE = _XDG_DATA_HOME / "applications" / DESKTOP_FILE_NAME
 
 CONFIG_DIR = Path(_dirs.user_config_dir)
 DATA_DIR = Path(_dirs.user_data_dir)
@@ -89,6 +91,13 @@ CHROME_UA = (
     f"Mozilla/5.0 ({_OS_STR}) AppleWebKit/537.36 "
     f"(KHTML, like Gecko) Chrome/{CHROME_FULL_VERSION} Safari/537.36"
 )
+
+# --- Platform hints (for JS navigator overrides) ---
+PLATFORM_STRING = f"Linux {_MACHINE}"
+ARCH: str = {"x86_64": "x86", "AMD64": "x86", "aarch64": "arm", "arm64": "arm"}.get(
+    _MACHINE, "x86"
+)
+BITNESS = "64"
 
 # --- Timing ---
 UNREAD_POLL_MS: int = int(_cfg["unread_poll_ms"])
