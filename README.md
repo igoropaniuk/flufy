@@ -32,6 +32,19 @@ supported by Qt, including `aarch64` and `x86_64`.
 - PyQt6 and PyQt6-WebEngine (6.7.0+)
 - Linux desktop environment with a system tray
 - `notify-send` (libnotify) for desktop notifications
+- `libminizip` system library (required by QtWebEngine)
+
+### Installing system dependencies
+
+On Ubuntu/Debian:
+
+```bash
+# Ubuntu 24.04+
+sudo apt install libminizip1t64
+
+# Ubuntu 22.04 and earlier
+sudo apt install libminizip1
+```
 
 ## Installation
 
