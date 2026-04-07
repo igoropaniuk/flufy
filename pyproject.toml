@@ -1,0 +1,18 @@
+[project]
+name = "flufy"
+version = "0.0.1"
+description = "Unofficial arch-agnostic thin client for Slack"
+authors = [
+    {name = "Igor Opaniuk", email = "igor.opaniuk@gmail.com"}
+]
+license = "MIT"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+flufy = "flufy.main:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
