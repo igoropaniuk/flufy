@@ -16,3 +16,23 @@ flufy = "flufy.main:main"
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "isort (>=8.0.1,<9.0.0)",
+    "mypy (>=1.20.0,<2.0.0)",
+    "ruff (>=0.15.9,<0.16.0)",
+    "pytest (>=9.0.2,<10.0.0)"
+]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = []
+files = ["flufy"]
+ignore_missing_imports = true
+show_error_codes = true
+pretty = true
+strict_optional = true
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
