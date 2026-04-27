@@ -1,6 +1,7 @@
 """QtWebEngine browser widget with Chrome UA spoofing."""
 
 from PyQt6.QtCore import QByteArray, QObject, Qt, QUrl, pyqtSignal
+from PyQt6.QtGui import QDesktopServices
 from PyQt6.QtWebEngineCore import (
     QWebEnginePage,
     QWebEngineProfile,
@@ -59,6 +60,39 @@ class _ChromeUAInterceptor(QWebEngineUrlRequestInterceptor):
         )
 
 
+class _ExternalLinkPage(QWebEnginePage):
+    """Throwaway page that hands its first navigation off to the system browser."""
+
+    def __init__(
+        self,
+        profile: QWebEngineProfile | None = None,
+        parent: QObject | None = None,
+    ) -> None:
+        """Create the page, ensuring it is freed if the popup closes itself."""
+        if profile is not None:
+            super().__init__(profile, parent)
+        else:
+            super().__init__(parent)
+        # Cover popups that load about:blank but never navigate to a real URL.
+        self.windowCloseRequested.connect(self.deleteLater)
+
+    def acceptNavigationRequest(  # noqa: N802
+        self,
+        url: QUrl,
+        _type: QWebEnginePage.NavigationType,
+        is_main_frame: bool,
+    ) -> bool:
+        """Open *url* externally and discard this page."""
+        # Let the engine handle schemes the system browser can't (or shouldn't):
+        # the about:blank that some window.open() flows emit before the real
+        # navigation, javascript: code, and origin-bound blob: URLs.
+        if not is_main_frame or url.scheme() in ("about", "javascript", "blob"):
+            return True
+        QDesktopServices.openUrl(url)
+        self.deleteLater()
+        return False
+
+
 class _AppPage(QWebEnginePage):
     """Custom page that auto-grants notification permissions."""
 
@@ -84,6 +118,12 @@ class _AppPage(QWebEnginePage):
                 feature,
                 QWebEnginePage.PermissionPolicy.PermissionGrantedByUser,
             )
+
+    def createWindow(  # noqa: N802
+        self, _type: QWebEnginePage.WebWindowType
+    ) -> QWebEnginePage:
+        """Route ``window.open`` / ``target=_blank`` clicks to the system browser."""
+        return _ExternalLinkPage(self.profile(), self)
 
 
 def _load_override_js() -> str:
