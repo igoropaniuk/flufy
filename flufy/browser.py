@@ -6,6 +6,7 @@ from PyQt6.QtWebEngineCore import (
     QWebEnginePage,
     QWebEngineProfile,
     QWebEngineScript,
+    QWebEngineSettings,
     QWebEngineUrlRequestInterceptor,
 )
 from PyQt6.QtWebEngineWidgets import QWebEngineView
@@ -161,6 +162,7 @@ class Browser(QWebEngineView):
         profile = self._create_profile()
         page = _AppPage(profile, self)
         self._inject_overrides(page)
+        self._enable_clipboard(page)
         self.setPage(page)
 
         self._was_maximized = False
@@ -198,6 +200,17 @@ class Browser(QWebEngineView):
         script.setRunsOnSubFrames(True)
         script.setSourceCode(_load_override_js())
         page.scripts().insert(script)
+
+    @staticmethod
+    def _enable_clipboard(page: _AppPage) -> None:
+        """Allow the page's JS to read/write the system clipboard (e.g. copy image)."""
+        settings = page.settings()
+        settings.setAttribute(
+            QWebEngineSettings.WebAttribute.JavascriptCanAccessClipboard, True
+        )
+        settings.setAttribute(
+            QWebEngineSettings.WebAttribute.JavascriptCanPaste, True
+        )
 
     # -- navigation ----------------------------------------------------------
 
