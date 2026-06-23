@@ -1,8 +1,11 @@
 """QtWebEngine browser widget with Chrome UA spoofing."""
 
-from PyQt6.QtCore import QByteArray, QObject, Qt, QUrl, pyqtSignal
+from pathlib import Path
+
+from PyQt6.QtCore import QByteArray, QObject, QStandardPaths, Qt, QUrl, pyqtSignal
 from PyQt6.QtGui import QDesktopServices
 from PyQt6.QtWebEngineCore import (
+    QWebEngineDownloadRequest,
     QWebEnginePage,
     QWebEngineProfile,
     QWebEngineScript,
@@ -10,6 +13,7 @@ from PyQt6.QtWebEngineCore import (
     QWebEngineUrlRequestInterceptor,
 )
 from PyQt6.QtWebEngineWidgets import QWebEngineView
+from PyQt6.QtWidgets import QFileDialog
 
 from flufy.config import (
     APP_NAME,
@@ -188,7 +192,32 @@ class Browser(QWebEngineView):
         profile.setUrlRequestInterceptor(self._interceptor)
 
         profile.setNotificationPresenter(show_notification)
+        profile.downloadRequested.connect(self._on_download_requested)
         return profile
+
+    def _on_download_requested(self, download: QWebEngineDownloadRequest) -> None:
+        """Prompt the user to confirm the save location before accepting."""
+        # writableLocation() can return "" on headless/misconfigured systems;
+        # Path("").mkdir() would raise, so fall back to ~/Downloads.
+        download_dir = QStandardPaths.writableLocation(
+            QStandardPaths.StandardLocation.DownloadLocation
+        )
+        downloads = Path(download_dir) if download_dir else Path.home() / "Downloads"
+        downloads.mkdir(parents=True, exist_ok=True)
+
+        # suggestedFileName() is server-controlled; strip it to a bare basename so
+        # it can't steer the default path elsewhere via "../" or an absolute path.
+        suggested_name = Path(download.suggestedFileName()).name or "download"
+        suggested = downloads / suggested_name
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save File", str(suggested))
+        if not file_path:
+            download.cancel()
+            return
+
+        save_path = Path(file_path)
+        download.setDownloadDirectory(str(save_path.parent))
+        download.setDownloadFileName(save_path.name)
+        download.accept()
 
     @staticmethod
     def _inject_overrides(page: _AppPage) -> None:
@@ -208,9 +237,7 @@ class Browser(QWebEngineView):
         settings.setAttribute(
             QWebEngineSettings.WebAttribute.JavascriptCanAccessClipboard, True
         )
-        settings.setAttribute(
-            QWebEngineSettings.WebAttribute.JavascriptCanPaste, True
-        )
+        settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanPaste, True)
 
     # -- navigation ----------------------------------------------------------
 
