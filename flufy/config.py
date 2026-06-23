@@ -36,7 +36,7 @@ _DEFAULTS: dict[str, str | int] = {
     "window_title": "Flufy",
     "window_width": 1200,
     "window_height": 800,
-    "chrome_full_version": "136.0.7103.114",
+    "chrome_full_version": "140.0.7339.225",
     "unread_poll_ms": 3000,
 }
 

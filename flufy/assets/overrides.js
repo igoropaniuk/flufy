@@ -33,7 +33,7 @@
   });
 
   // --- Client Hints API (navigator.userAgentData) ---
-  // Brand order and "Not" brand string match Chrome 136 stable.
+  // Brand order and "Not" brand string match Chrome 140 stable.
   const brands = [
     { brand: "Chromium", version: "{{CHROME_VERSION}}" },
     { brand: "Google Chrome", version: "{{CHROME_VERSION}}" },
