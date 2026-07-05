@@ -7,6 +7,7 @@ from PyQt6.QtGui import QDesktopServices
 from PyQt6.QtWebEngineCore import (
     QWebEngineDownloadRequest,
     QWebEnginePage,
+    QWebEnginePermission,
     QWebEngineProfile,
     QWebEngineScript,
     QWebEngineSettings,
@@ -99,30 +100,38 @@ class _ExternalLinkPage(QWebEnginePage):
 
 
 class _AppPage(QWebEnginePage):
-    """Custom page that auto-grants notification permissions."""
+    """Custom page that auto-grants notification and clipboard permissions."""
+
+    # Permission types we silently grant. ClipboardReadWrite is what lets the web
+    # client's own copy/paste round-trip through navigator.clipboard.read(): on
+    # Qt 6.8+ that async read is gated behind this permission, separately from the
+    # JavascriptCanPaste setting (which only covers the native paste event).
+    _AUTO_GRANT = frozenset(
+        {
+            QWebEnginePermission.PermissionType.Notifications,
+            QWebEnginePermission.PermissionType.ClipboardReadWrite,
+        }
+    )
 
     def __init__(
         self,
         profile: QWebEngineProfile | None = None,
         parent: QObject | None = None,
     ) -> None:
-        """Create the page, wiring up the feature-permission handler."""
+        """Create the page, wiring up the permission handler."""
         if profile is not None:
             super().__init__(profile, parent)
         else:
             super().__init__(parent)
-        self.featurePermissionRequested.connect(self._on_feature_permission)
+        # Qt 6.8+ (our minimum) delivers notification and clipboard permission
+        # requests through permissionRequested, superseding the deprecated
+        # featurePermissionRequested signal.
+        self.permissionRequested.connect(self._on_permission_requested)
 
-    def _on_feature_permission(
-        self, url: QUrl, feature: QWebEnginePage.Feature
-    ) -> None:
-        """Auto-grant notification permission requests."""
-        if feature == QWebEnginePage.Feature.Notifications:
-            self.setFeaturePermission(
-                url,
-                feature,
-                QWebEnginePage.PermissionPolicy.PermissionGrantedByUser,
-            )
+    def _on_permission_requested(self, permission: QWebEnginePermission) -> None:
+        """Auto-grant the notification and clipboard permission requests."""
+        if permission.permissionType() in self._AUTO_GRANT:
+            permission.grant()
 
     def createWindow(  # noqa: N802
         self, _type: QWebEnginePage.WebWindowType
