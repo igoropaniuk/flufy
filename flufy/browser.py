@@ -234,6 +234,8 @@ class Browser(QWebEngineView):
     def _enable_clipboard(page: _AppPage) -> None:
         """Allow the page's JS to read/write the system clipboard (e.g. copy image)."""
         settings = page.settings()
+        if settings is None:
+            return
         settings.setAttribute(
             QWebEngineSettings.WebAttribute.JavascriptCanAccessClipboard, True
         )
